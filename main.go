@@ -3,13 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/nsmith5/super-insecure/pkg/server"
+	"github.com/nsmith5/super-insecure/pkg/cli"
 )
 
 func main() {
-	s := server.New()
-
-	err := s.ListenAndServe()
+	err := cli.New().Execute()
 	if err != nil {
 		log.Fatal(err)
 	}

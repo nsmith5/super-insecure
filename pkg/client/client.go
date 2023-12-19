@@ -63,7 +63,13 @@ func ItemGet(ctx context.Context, username, item string) (string, error) {
 }
 
 func ItemSet(ctx context.Context, username, item, value string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, `http://localhost:8080/items/`+item, nil)
+	body := fmt.Sprintf(`{"value": %q}`, value)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		`http://localhost:8080/items/`+item,
+		strings.NewReader(body),
+	)
 	if err != nil {
 		return err
 	}
