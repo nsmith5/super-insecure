@@ -2,14 +2,18 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/nsmith5/super-insecure/pkg/store"
 )
 
-var users = make(map[string]struct{})
-var items = make(map[string]map[string]string)
+type Server struct {
+	Store store.Store
+}
 
-func handleRegister(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// Body {"username": "foo"}
 	var req struct {
 		Username string
@@ -21,12 +25,13 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := users[req.Username]; ok {
-		http.Error(w, "user already exists", http.StatusBadRequest)
+	if err := s.Store.UserAdd(r.Context(), req.Username); err != nil {
+		if errors.Is(err, store.ErrorUserAlreadyExists) {
+			http.Error(w, "user already exists", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else {
-		users[req.Username] = struct{}{}
-		items[req.Username] = make(map[string]string)
 	}
 }
 
@@ -44,7 +49,7 @@ func getUser(r *http.Request) string {
 	return s
 }
 
-func handleItem(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 	if user == "" {
 		// Not "authorized"
@@ -52,8 +57,12 @@ func handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := users[user]
-	if !ok {
+	exists, err := s.Store.UserExists(r.Context(), user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !exists {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -66,11 +75,16 @@ func handleItem(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		value, ok := items[user][itemPath]
-		if !ok {
+		value, err := s.Store.ItemGet(r.Context(), user, itemPath)
+		if errors.Is(err, store.ErrorItemNotFound) {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		_ = json.NewEncoder(w).Encode(struct {
 			Value string
 		}{
@@ -87,9 +101,18 @@ func handleItem(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to decode body", http.StatusBadRequest)
 			return
 		}
-		items[user][itemPath] = req.Value
+
+		err = s.Store.ItemSet(r.Context(), user, itemPath, req.Value)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 	case http.MethodDelete:
-		delete(items[user], itemPath)
+		err = s.Store.ItemDelete(r.Context(), user, itemPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }

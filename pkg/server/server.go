@@ -1,10 +1,17 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
 
-func New() http.Server {
-	http.HandleFunc(`/register`, handleRegister)
-	http.HandleFunc(`/items/`, handleItem)
+	"github.com/nsmith5/super-insecure/pkg/store"
+)
+
+func New(db store.Store) http.Server {
+	server := Server{
+		Store: db,
+	}
+	http.HandleFunc(`/register`, server.handleRegister)
+	http.HandleFunc(`/items/`, server.handleItem)
 	return http.Server{
 		Addr:    ":8080",
 		Handler: http.DefaultServeMux,

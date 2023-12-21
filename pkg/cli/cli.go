@@ -5,6 +5,7 @@ import (
 
 	"github.com/nsmith5/super-insecure/pkg/client"
 	"github.com/nsmith5/super-insecure/pkg/server"
+	"github.com/nsmith5/super-insecure/pkg/store"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +27,7 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "run server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		s := server.New()
+		s := server.New(store.NewInMemory())
 		return s.ListenAndServe()
 	},
 }
