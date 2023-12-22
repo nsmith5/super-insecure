@@ -1,11 +1,5 @@
 Project goals
 - [ ] Move to postgres for data storage
 - [x] Clean up the data storage interface
-- [ ] Deploy to Kubernetes (k3d locally)
+- [x] Deploy to Kubernetes (k3d locally)
 - [ ] Implement proof of concept authentication
-
-
-Streaming goals
-- Talk less
-- Good posture
-- Get a better at describing how I'm thinking about the problem at hand
