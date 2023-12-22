@@ -2,11 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"log"
+	"os"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/spf13/cobra"
 
 	"github.com/nsmith5/super-insecure/pkg/client"
 	"github.com/nsmith5/super-insecure/pkg/server"
 	"github.com/nsmith5/super-insecure/pkg/store"
-	"github.com/spf13/cobra"
 )
 
 func New() *cobra.Command {
@@ -27,7 +31,18 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "run server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		s := server.New(store.NewInMemory())
+		url := os.Getenv("DATABASE_URL")
+		if url == "" {
+			log.Fatal("must set DATABASE_URL for postgres db")
+		}
+
+		conn, err := pgx.Connect(cmd.Context(), url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close(cmd.Context())
+
+		s := server.New(store.NewPostgres(conn))
 		return s.ListenAndServe()
 	},
 }

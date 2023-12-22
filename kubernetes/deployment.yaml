@@ -18,6 +18,9 @@ spec:
         image: ko://github.com/nsmith5/super-insecure
         args:
         - "serve"
+        env:
+        - name: DATABASE_URL
+          value: "postgres://super-insecure:super-insecure@postgres:5432/super-insecure"
         ports:
         - containerPort: 8080
   

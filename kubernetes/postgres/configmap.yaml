@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: super-insecure
+data:
+  init.sql: |
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      username text UNIQUE 
+    );
+    
+    CREATE TABLE items (
+      id SERIAL PRIMARY KEY,
+      user_id SERIAL REFERENCES users (id),
+      name text,
+      value text,
+      UNIQUE(user_id, name)
+    );
